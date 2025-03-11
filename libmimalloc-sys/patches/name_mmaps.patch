@@ -1,0 +1,50 @@
+diff --git a/src/prim/unix/prim.c b/src/prim/unix/prim.c
+index dd665d3d..fe515c17 100644
+--- a/src/prim/unix/prim.c
++++ b/src/prim/unix/prim.c
+@@ -31,8 +31,11 @@ terms of the MIT license. A copy of the license can be found in the file
+ 
+ #if defined(__linux__)
+   #include <features.h>
+-  #if defined(MI_NO_THP)
++  #include <linux/prctl.h>
+   #include <sys/prctl.h>
++  #ifndef PR_SET_VMA
++    #define PR_SET_VMA            0x53564d41
++    #define PR_SET_VMA_ANON_NAME  0
+   #endif
+   #if defined(__GLIBC__)
+   #include <linux/mman.h> // linux mmap flags
+@@ -188,6 +191,15 @@ static int unix_madvise(void* addr, size_t size, int advice) {
+   #endif
+ }
+ 
++// Heavily inspired by https://github.com/microsoft/mimalloc/pull/569
++static void* name_mmap(void* addr, size_t size) {
++  #if defined(__linux__)
++    // This returns an error code, but I'm not sure it makes sense to do anything with it
++    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, addr, size, "libdatadog");
++  #endif
++  return addr;
++}
++
+ static void* unix_mmap_prim(void* addr, size_t size, size_t try_alignment, int protect_flags, int flags, int fd) {
+   MI_UNUSED(try_alignment);
+   void* p = NULL;
+@@ -225,14 +236,14 @@ static void* unix_mmap_prim(void* addr, size_t size, size_t try_alignment, int p
+         #endif
+         _mi_trace_message("unable to directly request hinted aligned OS memory (error: %d (0x%x), size: 0x%zx bytes, alignment: 0x%zx, hint address: %p)\n", err, err, size, try_alignment, hint);
+       }
+-      if (p!=MAP_FAILED) return p;
++      if (p!=MAP_FAILED) return name_mmap(p, size);
+       // fall back to regular mmap
+     }
+   }
+   #endif
+   // regular mmap
+   p = mmap(addr, size, protect_flags, flags, fd, 0);
+-  if (p!=MAP_FAILED) return p;
++  if (p!=MAP_FAILED) return name_mmap(p, size);
+   // failed to allocate
+   return NULL;
+ }
