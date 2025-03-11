@@ -1,6 +1,10 @@
 use std::env;
 
+mod build_custom;
+
 fn main() {
+    build_custom::check_and_apply_patches();
+
     let mut build = cc::Build::new();
 
     build.include("c_src/mimalloc/include");
@@ -63,4 +67,6 @@ fn main() {
         let atomic_name = env::var("DEP_ATOMIC").unwrap_or("atomic".to_owned());
         println!("cargo:rustc-link-lib={}", atomic_name);
     }
+
+    build_custom::clean_patches();
 }
