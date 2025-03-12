@@ -7,6 +7,10 @@ fn main() {
 
     let mut build = cc::Build::new();
 
+    if env::var_os("CARGO_FEATURE_STAT").is_some() {
+        build.define("MI_STAT", "1");
+    }
+
     build.include("c_src/mimalloc/include");
     build.include("c_src/mimalloc/src");
     build.file("c_src/mimalloc/src/static.c");
