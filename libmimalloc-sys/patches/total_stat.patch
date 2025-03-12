@@ -1,0 +1,44 @@
+diff --git a/include/mimalloc.h b/include/mimalloc.h
+index c41bcc80..ead7d025 100644
+--- a/include/mimalloc.h
++++ b/include/mimalloc.h
+@@ -164,6 +164,8 @@ mi_decl_export void mi_process_info(size_t* elapsed_msecs, size_t* user_msecs, s
+                                     size_t* current_rss, size_t* peak_rss,
+                                     size_t* current_commit, size_t* peak_commit, size_t* page_faults) mi_attr_noexcept;
+ 
++mi_decl_export void mi_libdatadog_total_stat(int64_t* peak_bytes, int64_t* total_bytes, int64_t* freed_bytes, int64_t* current_bytes) mi_attr_noexcept;
++
+ // -------------------------------------------------------------------------------------
+ // Aligned allocation
+ // Note that `alignment` always follows `size` for consistency with unaligned
+diff --git a/src/stats.c b/src/stats.c
+index a9364027..84fe686e 100644
+--- a/src/stats.c
++++ b/src/stats.c
+@@ -465,3 +465,26 @@ mi_decl_export void mi_process_info(size_t* elapsed_msecs, size_t* user_msecs, s
+   if (peak_commit!=NULL)    *peak_commit    = pinfo.peak_commit;
+   if (page_faults!=NULL)    *page_faults    = pinfo.page_faults;
+ }
++
++// This is copied over from mi_stats_print_out/_mi_stats_print, so we can get this programmatically in a nice format
++mi_decl_export void mi_libdatadog_total_stat(int64_t* peak_bytes, int64_t* total_bytes, int64_t* freed_bytes, int64_t* current_bytes) mi_attr_noexcept {
++  #if MI_STAT
++    mi_stats_merge_from(mi_stats_get_default());
++    mi_stats_t *stats = &_mi_stats_main;
++
++    mi_stat_count_t total = { 0,0,0,0 };
++    mi_stat_add(&total, &stats->normal, 1);
++    mi_stat_add(&total, &stats->large, 1);
++    mi_stat_add(&total, &stats->huge, 1);
++
++    if (   peak_bytes != NULL)    *peak_bytes = total.peak;
++    if (  total_bytes != NULL)   *total_bytes = total.allocated; // Renamed allocated to total to match the header names used by mi_stats_print
++    if (  freed_bytes != NULL)   *freed_bytes = total.freed;
++    if (current_bytes != NULL) *current_bytes = total.current;
++  #else
++    MI_UNUSED(peak_bytes);
++    MI_UNUSED(total_bytes);
++    MI_UNUSED(freed_bytes);
++    MI_UNUSED(current_bytes);
++  #endif
++}

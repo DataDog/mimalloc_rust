@@ -442,6 +442,15 @@ extern "C" {
     ///
     /// Note: This function is thread safe.
     pub fn mi_register_error(out: mi_error_fun, arg: *mut c_void);
+
+    /// This exposes mimalloc's extra stat counters for total memory allocation and use.
+    #[cfg(feature = "stat")]
+    pub fn mi_libdatadog_total_stat(
+        peak_bytes: *mut i64,
+        total_bytes: *mut i64,
+        freed_bytes: *mut i64,
+        current_bytes: *mut i64,
+    );
 }
 
 /// An output callback. Must be thread-safe.
