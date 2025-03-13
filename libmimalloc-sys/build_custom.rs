@@ -59,13 +59,12 @@ fn apply_patches(target: impl AsRef<Path>, patch_dir: impl AsRef<Path>) {
             // Convert the patch file to an absolute (canonical) path.
             let abs_path = fs::canonicalize(&path).expect("Failed to canonicalize patch file");
             println!("cargo:warning=Applying patch: {}", abs_path.display());
-            let status = Command::new("patch")
-                .arg("-p1")
-                .arg("-i")
+            let status = Command::new("git")
+                .arg("apply")
                 .arg(abs_path.to_str().expect("Non UTF-8 patch file path"))
                 .current_dir(target)
                 .status()
-                .expect("failed to execute patch command");
+                .expect("failed to execute git apply");
             if !status.success() {
                 panic!("Failed to apply patch: {}", abs_path.display());
             }
