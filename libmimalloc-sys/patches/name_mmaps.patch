@@ -2,12 +2,11 @@ diff --git a/src/prim/unix/prim.c b/src/prim/unix/prim.c
 index dd665d3d..fe515c17 100644
 --- a/src/prim/unix/prim.c
 +++ b/src/prim/unix/prim.c
-@@ -31,8 +31,11 @@ terms of the MIT license. A copy of the license can be found in the file
+@@ -31,8 +31,10 @@ terms of the MIT license. A copy of the license can be found in the file
  
  #if defined(__linux__)
    #include <features.h>
 -  #if defined(MI_NO_THP)
-+  #include <linux/prctl.h>
    #include <sys/prctl.h>
 +  #ifndef PR_SET_VMA
 +    #define PR_SET_VMA            0x53564d41
