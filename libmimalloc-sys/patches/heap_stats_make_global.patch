@@ -1,0 +1,21 @@
+diff --git a/include/mimalloc/types.h b/include/mimalloc/types.h
+index 2fdde904..c34b07c3 100644
+--- a/include/mimalloc/types.h
++++ b/include/mimalloc/types.h
+@@ -653,9 +653,13 @@ void _mi_stat_counter_increase(mi_stat_counter_t* stat, size_t amount);
+ #define mi_stat_counter_increase(stat,amount) (void)0
+ #endif
+ 
+-#define mi_heap_stat_counter_increase(heap,stat,amount)  mi_stat_counter_increase( (heap)->tld->stats.stat, amount)
+-#define mi_heap_stat_increase(heap,stat,amount)  mi_stat_increase( (heap)->tld->stats.stat, amount)
+-#define mi_heap_stat_decrease(heap,stat,amount)  mi_stat_decrease( (heap)->tld->stats.stat, amount)
++// By default, mimalloc keeps these stats in (heap)->tld->stats, e.g. in thread-local counters. This doesn't work
++// for the use case of using these stats for monitoring, since we don't know when we can gather the stats from the
++// different threads. So we've changed them to update the global stats. (_mi_stat_increase knows to use atomic
++// operations when updating the global stats)
++#define mi_heap_stat_counter_increase(heap,stat,amount)  mi_stat_counter_increase( _mi_stats_main.stat, amount)
++#define mi_heap_stat_increase(heap,stat,amount)  mi_stat_increase( _mi_stats_main.stat, amount)
++#define mi_heap_stat_decrease(heap,stat,amount)  mi_stat_decrease( _mi_stats_main.stat, amount)
+ 
+ 
+ // ------------------------------------------------------
